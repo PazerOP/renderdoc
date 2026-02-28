@@ -30,6 +30,7 @@
 #include <QSemaphore>
 #include <QTimer>
 #include "Code/Interface/QRDInterface.h"
+#include "Code/ProcessIOReader.h"
 
 namespace Ui
 {
@@ -53,7 +54,8 @@ class LiveCapture : public QFrame
 
 public:
   explicit LiveCapture(ICaptureContext &ctx, const QString &hostname, const QString &friendlyname,
-                       uint32_t ident, MainWindow *main, QWidget *parent = 0);
+                       uint32_t ident, MainWindow *main, QWidget *parent = 0,
+                       Process::ProcessIOHandles *ioHandles = nullptr);
 
   ~LiveCapture();
 
@@ -200,4 +202,9 @@ private:
   QMutex m_ChildrenLock;
   QList<ChildProcess> m_Children;
   QMap<QString, APIStatus> m_APIs;
+
+  ProcessIOReader *m_IOReader = nullptr;
+  bool m_IsRemote = false;
+
+  void appendProcessOutput(bool isStderr, const QString &text);
 };

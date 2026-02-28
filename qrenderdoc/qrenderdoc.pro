@@ -176,6 +176,7 @@ SOURCES += Code/qrenderdoc.cpp \
     Code/BufferFormatter.cpp \
     Code/Resources.cpp \
     Code/RGPInterop.cpp \
+    Code/ProcessIOReader.cpp \
     Code/pyrenderdoc/PythonContext.cpp \
     Code/Interface/QRDInterface.cpp \
     Code/Interface/Analytics.cpp \
@@ -263,6 +264,7 @@ HEADERS += Code/CaptureContext.h \
     Code/MiniQtHelper.h \
     Code/Resources.h \
     Code/RGPInterop.h \
+    Code/ProcessIOReader.h \
     Code/pyrenderdoc/PythonContext.h \
     Code/pyrenderdoc/pyconversion.h \
     Code/pyrenderdoc/interface_check.h \

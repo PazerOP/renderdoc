@@ -759,7 +759,7 @@ void MainWindow::OnCaptureTrigger(const QString &exe, const QString &workingDir,
           m_Ctx,
           m_Ctx.Replay().CurrentRemote().IsValid() ? m_Ctx.Replay().CurrentRemote().Hostname() : "",
           m_Ctx.Replay().CurrentRemote().IsValid() ? m_Ctx.Replay().CurrentRemote().Name() : "",
-          ret.ident, this, this);
+          ret.ident, this, this, ret.ioHandles);
       ShowLiveCapture(live);
       callback(live);
     });

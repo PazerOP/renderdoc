@@ -91,6 +91,7 @@ enum class RemoteServerPacket
   HasEmbeddedDependencies,
   HasPendingDependencies,
   GetPendingDependenciesNicknames,
+  GetProcessOutput,
   // This must be last
   Count,
 };
@@ -144,6 +145,7 @@ rdcstr DoStringise(const RemoteServerPacket &el)
     STRINGISE_ENUM_NAMED(RemoteServerPacket::HasPendingDependencies, "HasPendingDependencies");
     STRINGISE_ENUM_NAMED(RemoteServerPacket::GetPendingDependenciesNicknames,
                          "GetPendingDependenciesNicknames");
+    STRINGISE_ENUM_NAMED(RemoteServerPacket::GetProcessOutput, "GetProcessOutput");
     STRINGISE_ENUM_NAMED(RemoteServerPacket::Count, "Count");
   }
   END_ENUM_STRINGISE();
@@ -325,6 +327,46 @@ static void ActiveRemoteClientThread(ClientThread *threadData,
   reader.SetStreamingMode(true);
 
   uint32_t captureNum = 0;
+
+  // process I/O buffering for forwarding stdout/stderr to the client
+  struct ProcessIOEntry
+  {
+    bool isStderr;
+    rdcstr data;
+  };
+  Threading::CriticalSection processIOLock;
+  rdcarray<ProcessIOEntry> processIOBuffer;
+  Process::ProcessIOHandles processIOHandles;
+  Threading::ThreadHandle ioStdoutThread = 0, ioStderrThread = 0;
+
+  auto startIOReader = [&processIOLock, &processIOBuffer](int fd, void *handle, bool isStderr,
+                                                          Threading::ThreadHandle &thread) {
+    if(fd < 0 && handle == NULL)
+      return;
+
+    thread = Threading::CreateThread([&processIOLock, &processIOBuffer, fd, handle, isStderr]() {
+      char buf[4096];
+      for(;;)
+      {
+        int bytesRead = 0;
+#if ENABLED(RDOC_WIN32)
+        DWORD dwRead = 0;
+        BOOL ok = ReadFile((HANDLE)handle, buf, sizeof(buf), &dwRead, NULL);
+        bytesRead = ok ? (int)dwRead : -1;
+#else
+        bytesRead = (int)read(fd, buf, sizeof(buf));
+#endif
+        if(bytesRead <= 0)
+          break;
+
+        rdcstr text(buf, bytesRead);
+        {
+          SCOPED_LOCK(processIOLock);
+          processIOBuffer.push_back({isStderr, text});
+        }
+      }
+    });
+  };
 
   while(client)
   {
@@ -911,8 +953,19 @@ static void ActiveRemoteClientThread(ClientThread *threadData,
 
       if(threadData->allowExecution)
       {
-        rdctie(res, ident) =
-            Process::LaunchAndInjectIntoProcess(app, workingDir, cmdLine, env, "", opts, false);
+        rdctie(res, ident) = Process::LaunchAndInjectIntoProcess(app, workingDir, cmdLine, env, "",
+                                                                 opts, false, &processIOHandles);
+
+        if(res.code == ResultCode::Succeeded)
+        {
+#if ENABLED(RDOC_WIN32)
+          startIOReader(-1, processIOHandles.stdoutRead, false, ioStdoutThread);
+          startIOReader(-1, processIOHandles.stderrRead, true, ioStderrThread);
+#else
+          startIOReader(processIOHandles.stdoutRead, NULL, false, ioStdoutThread);
+          startIOReader(processIOHandles.stderrRead, NULL, true, ioStderrThread);
+#endif
+        }
       }
       else
       {
@@ -1028,6 +1081,28 @@ static void ActiveRemoteClientThread(ClientThread *threadData,
         SERIALISE_ELEMENT(res);
       }
     }
+    else if(type == RemoteServerPacket::GetProcessOutput)
+    {
+      reader.EndChunk();
+
+      rdcarray<ProcessIOEntry> entries;
+      {
+        SCOPED_LOCK(processIOLock);
+        entries.swap(processIOBuffer);
+      }
+
+      {
+        WRITE_DATA_SCOPE();
+        SCOPED_SERIALISE_CHUNK(RemoteServerPacket::GetProcessOutput);
+        uint32_t count = (uint32_t)entries.size();
+        SERIALISE_ELEMENT(count);
+        for(uint32_t i = 0; i < count; i++)
+        {
+          SERIALISE_ELEMENT(entries[i].isStderr);
+          SERIALISE_ELEMENT(entries[i].data);
+        }
+      }
+    }
     else if((int)type >= eReplayProxy_First && proxy)
     {
       bool ok = proxy->Tick((int)type);
@@ -1037,6 +1112,19 @@ static void ActiveRemoteClientThread(ClientThread *threadData,
 
       continue;
     }
+  }
+
+  // clean up process I/O threads
+  processIOHandles.Close();
+  if(ioStdoutThread)
+  {
+    Threading::JoinThread(ioStdoutThread);
+    Threading::CloseThread(ioStdoutThread);
+  }
+  if(ioStderrThread)
+  {
+    Threading::JoinThread(ioStderrThread);
+    Threading::CloseThread(ioStderrThread);
   }
 
   FileIO::logfile_close(debugLog, rdcstr());
@@ -2398,4 +2486,43 @@ rdcarray<rdcstr> RemoteServer::GetPendingDependenciesNicknames()
     ser.EndChunk();
   }
   return ret;
+}
+
+bool RemoteServer::GetProcessOutput(rdcarray<rdcpair<bool, rdcstr>> &output)
+{
+  if(!Connected())
+    return false;
+
+  {
+    WRITE_DATA_SCOPE();
+    SCOPED_SERIALISE_CHUNK(RemoteServerPacket::GetProcessOutput);
+  }
+
+  {
+    READ_DATA_SCOPE();
+    RemoteServerPacket type = ser.ReadChunk<RemoteServerPacket>();
+
+    if(type == RemoteServerPacket::GetProcessOutput)
+    {
+      uint32_t count = 0;
+      SERIALISE_ELEMENT(count);
+      output.reserve(count);
+      for(uint32_t i = 0; i < count; i++)
+      {
+        bool isStderr = false;
+        rdcstr data;
+        SERIALISE_ELEMENT(isStderr);
+        SERIALISE_ELEMENT(data);
+        output.push_back({isStderr, data});
+      }
+    }
+    else
+    {
+      RDCERR("Unexpected response to get process output request");
+    }
+
+    ser.EndChunk();
+  }
+
+  return !output.empty();
 }

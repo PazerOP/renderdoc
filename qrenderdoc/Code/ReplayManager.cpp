@@ -230,6 +230,15 @@ void ReplayManager::CopyCaptureFromRemote(const rdcstr &remotepath, const rdcstr
       [&progress]() { return progress; });
 }
 
+bool ReplayManager::GetRemoteProcessOutput(rdcarray<rdcpair<bool, rdcstr>> &output)
+{
+  QMutexLocker autolock(&m_RemoteLock);
+  if(!m_Remote)
+    return false;
+
+  return m_Remote->GetProcessOutput(output);
+}
+
 bool ReplayManager::IsRunning()
 {
   return m_Thread && m_Thread->isRunning() && m_Running;

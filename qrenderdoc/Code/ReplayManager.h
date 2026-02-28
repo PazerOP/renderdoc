@@ -101,6 +101,8 @@ public:
   rdcstr CopyCaptureToRemote(const rdcstr &localpath, QWidget *window);
   void CopyCaptureFromRemote(const rdcstr &remotepath, const rdcstr &localpath, QWidget *window);
 
+  bool GetRemoteProcessOutput(rdcarray<rdcpair<bool, rdcstr>> &output);
+
 private:
   struct InvokeHandle
   {

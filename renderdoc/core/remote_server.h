@@ -106,6 +106,8 @@ public:
   virtual bool HasPendingDependencies();
   virtual rdcarray<rdcstr> GetPendingDependenciesNicknames();
 
+  virtual bool GetProcessOutput(rdcarray<rdcpair<bool, rdcstr>> &output);
+
 protected:
   Network::Socket *m_Socket;
   WriteSerialiser *writer;

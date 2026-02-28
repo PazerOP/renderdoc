@@ -1565,6 +1565,10 @@ or an error has occurred.
 )");
   virtual void CloseCapture(IReplayController *rend) = 0;
 
+#if !defined(SWIG)
+  virtual bool GetProcessOutput(rdcarray<rdcpair<bool, rdcstr>> &output) = 0;
+#endif
+
   static const uint32_t NoPreference = ~0U;
 
 protected:

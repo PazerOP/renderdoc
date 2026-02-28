@@ -368,12 +368,25 @@ RENDERDOC_ExecuteAndInject(const rdcstr &app, const rdcstr &workingDir, const rd
                            const rdcarray<EnvironmentModification> &env, const rdcstr &capturefile,
                            const CaptureOptions &opts, bool waitForExit)
 {
+  Process::ProcessIOHandles *ioHandles = new Process::ProcessIOHandles();
+
   rdcpair<RDResult, uint32_t> status = Process::LaunchAndInjectIntoProcess(
-      app, workingDir, cmdLine, env, capturefile, opts, waitForExit != 0);
+      app, workingDir, cmdLine, env, capturefile, opts, waitForExit != 0, ioHandles);
 
   ExecuteResult ret;
   ret.result = status.first;
   ret.ident = status.second;
+
+  if(status.first.code == ResultCode::Succeeded)
+  {
+    ret.ioHandles = ioHandles;
+  }
+  else
+  {
+    delete ioHandles;
+    ret.ioHandles = NULL;
+  }
+
   return ret;
 }
 
