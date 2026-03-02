@@ -77,11 +77,13 @@ uint32_t LaunchProcess(const rdcstr &app, const rdcstr &workingDir, const rdcstr
                        bool internal, ProcessResult *result = NULL);
 uint32_t LaunchScript(const rdcstr &script, const rdcstr &workingDir, const rdcstr &args,
                       bool internal, ProcessResult *result = NULL);
+struct ProcessIOHandles;
 rdcpair<RDResult, uint32_t> LaunchAndInjectIntoProcess(const rdcstr &app, const rdcstr &workingDir,
                                                        const rdcstr &cmdLine,
                                                        const rdcarray<EnvironmentModification> &env,
                                                        const rdcstr &capturefile,
-                                                       const CaptureOptions &opts, bool waitForExit);
+                                                       const CaptureOptions &opts, bool waitForExit,
+                                                       ProcessIOHandles *ioHandles = NULL);
 bool IsModuleLoaded(const rdcstr &module);
 void *LoadModule(const rdcstr &module);
 void *GetFunctionAddress(void *module, const rdcstr &function);

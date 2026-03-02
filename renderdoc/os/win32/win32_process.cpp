@@ -29,6 +29,7 @@
 #include <Psapi.h>
 #include <tchar.h>
 #include <tlhelp32.h>
+#include "api/replay/control_types.h"
 #include "common/formatting.h"
 #include "core/core.h"
 #include "os/os_specific.h"
@@ -1128,7 +1129,7 @@ uint32_t Process::LaunchScript(const rdcstr &script, const rdcstr &workingDir,
 rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
     const rdcstr &app, const rdcstr &workingDir, const rdcstr &cmdLine,
     const rdcarray<EnvironmentModification> &env, const rdcstr &capturefile,
-    const CaptureOptions &opts, bool waitForExit)
+    const CaptureOptions &opts, bool waitForExit, ProcessIOHandles *ioHandles)
 {
   void *func =
       GetProcAddress(GetModuleHandleA(STRINGIZE(RDOC_BASE_NAME) ".dll"), "INTERNAL_SetCaptureFile");
@@ -1154,10 +1155,21 @@ rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
     return {result, 0};
   }
 
-  PROCESS_INFORMATION pi = RunProcess(app, workingDir, cmdLine, env, false, NULL, NULL);
+  HANDLE hStdoutRd = NULL, hStderrRd = NULL;
+  PROCESS_INFORMATION pi = RunProcess(app, workingDir, cmdLine, env, false,
+                                      ioHandles ? &hStdoutRd : NULL, ioHandles ? &hStderrRd : NULL);
+
+  if(ioHandles)
+  {
+    ioHandles->stdoutRead = (void *)hStdoutRd;
+    ioHandles->stderrRead = (void *)hStderrRd;
+  }
 
   if(pi.dwProcessId == 0)
   {
+    if(ioHandles)
+      ioHandles->Close();
+
     RDResult result;
     SET_ERROR_RESULT(result, ResultCode::InjectionFailed, "Failed to launch process.");
     return {result, 0};
@@ -1171,6 +1183,9 @@ rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
 
   if(ret.second == 0 || ret.first != ResultCode::Succeeded)
   {
+    if(ioHandles)
+      ioHandles->Close();
+
     CloseHandle(pi.hThread);
     return ret;
   }

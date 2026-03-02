@@ -2,12 +2,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - v1.x
-      - ci-test
-  pull_request:
-    branches:
-      - v1.x
 
 defaults:
   run:
@@ -283,6 +277,19 @@ jobs:
           echo "::error::$(cat test.log)" | tr -d '\r' |  tr '\n' '\001' | sed -e 's#\x01#%0D%0A#g';
           exit 1;
         fi
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Windows-${{ matrix.name }}
+        path: |
+          */${{ matrix.configuration }}/renderdoc.dll
+          */${{ matrix.configuration }}/renderdoccmd.exe
+          */${{ matrix.configuration }}/qrenderdoc.exe
+          */${{ matrix.configuration }}/renderdoc.pdb
+          */${{ matrix.configuration }}/renderdoccmd.pdb
+          */${{ matrix.configuration }}/qrenderdoc.pdb
+        retention-days: 14
   docs:
     name: Documentation Build
     needs: [commit-msg, clang-format]
@@ -386,6 +393,16 @@ jobs:
           echo "::error::$(cat test.log)" | tr '\n' '\001' | sed -e 's#\x01#%0A#g';
           exit 1;
         fi
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Linux-${{ matrix.name }}
+        path: |
+          build/lib/librenderdoc.so
+          build/bin/renderdoccmd
+          build/bin/qrenderdoc
+        retention-days: 14
   android:
     name: Android
     needs: [commit-msg, clang-format]
@@ -423,6 +440,15 @@ jobs:
         cmake -DBUILD_ANDROID=On -DANDROID_ABI=armeabi-v7a -DANDROID_NATIVE_API_LEVEL=23 ..
         make -j2
         popd
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android
+        path: |
+          build-android-arm32/lib/librenderdoc.so
+          build-android-arm32/bin/renderdoccmd
+        retention-days: 14
   macOS:
     name: Mac
     needs: [commit-msg, clang-format]
@@ -479,6 +505,16 @@ jobs:
           echo "::error::$(cat test.log)" | tr '\n' '\001' | sed -e $'s#\x01#%0A#g';
           exit 1;
         fi
+    - name: Upload build artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Mac-${{ matrix.name }}
+        path: |
+          build/lib/librenderdoc.dylib
+          build/bin/renderdoccmd
+          build/bin/qrenderdoc.app
+        retention-days: 14
     - if: matrix.type == 'Release' && github.event_name == 'push'
       name: Preparing for deploy
       run: ./util/buildscripts/scripts/prepare_deps_macos.sh ./build/bin/qrenderdoc.app/Contents/MacOS/qrenderdoc

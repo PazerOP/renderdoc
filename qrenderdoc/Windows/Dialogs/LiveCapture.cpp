@@ -35,6 +35,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include "Code/QRDUtils.h"
+#include "Code/ReplayManager.h"
 #include "Code/Resources.h"
 #include "Code/qprocessinfo.h"
 #include "Widgets/Extended/RDLabel.h"
@@ -82,7 +83,8 @@ public:
 };
 
 LiveCapture::LiveCapture(ICaptureContext &ctx, const QString &hostname, const QString &friendlyname,
-                         uint32_t ident, MainWindow *main, QWidget *parent)
+                         uint32_t ident, MainWindow *main, QWidget *parent,
+                         Process::ProcessIOHandles *ioHandles)
     : QFrame(parent),
       ui(new Ui::LiveCapture),
       m_Ctx(ctx),
@@ -92,6 +94,29 @@ LiveCapture::LiveCapture(ICaptureContext &ctx, const QString &hostname, const QS
       m_Main(main)
 {
   ui->setupUi(this);
+
+  // Set up process I/O reader for local launches
+  m_IsRemote = !hostname.isEmpty();
+  if(ioHandles && !m_IsRemote)
+  {
+    m_IOReader = new ProcessIOReader(ioHandles, this);
+    m_IOReader->start(
+        [this](bool isStderr, const QString &text) { appendProcessOutput(isStderr, text); });
+  }
+  else
+  {
+    // clean up unused handles
+    if(ioHandles)
+    {
+      ioHandles->Close();
+      delete ioHandles;
+    }
+  }
+
+  QObject::connect(ui->processOutputToggle, &QPushButton::toggled, ui->processOutput,
+                   &QTextEdit::setVisible);
+  QObject::connect(ui->processOutputClear, &QPushButton::clicked, ui->processOutput,
+                   &QTextEdit::clear);
 
   m_Disconnect.release();
 
@@ -183,6 +208,13 @@ LiveCapture::LiveCapture(ICaptureContext &ctx, const QString &hostname, const QS
 LiveCapture::~LiveCapture()
 {
   m_Main->LiveCaptureClosed(this);
+
+  if(m_IOReader)
+  {
+    m_IOReader->stop();
+    delete m_IOReader;
+    m_IOReader = nullptr;
+  }
 
   cleanItems();
   killThread();
@@ -1238,6 +1270,33 @@ void LiveCapture::connectionClosed()
   }
 }
 
+void LiveCapture::appendProcessOutput(bool isStderr, const QString &text)
+{
+  // Tee process output to qrenderdoc's own stdout/stderr so it's visible in the terminal
+  QByteArray utf8 = text.toUtf8();
+  FILE *dest = isStderr ? stderr : stdout;
+  fwrite(utf8.constData(), 1, utf8.size(), dest);
+  fflush(dest);
+
+  QTextEdit *output = ui->processOutput;
+  QScrollBar *scroll = output->verticalScrollBar();
+  bool wasAtBottom = scroll->value() >= scroll->maximum() - 4;
+
+  QTextCharFormat fmt;
+  if(isStderr)
+    fmt.setForeground(QBrush(QColor(220, 50, 50)));
+  else
+    fmt.setForeground(QBrush(output->palette().color(QPalette::Text)));
+
+  QTextCursor cursor = output->textCursor();
+  cursor.movePosition(QTextCursor::End);
+  cursor.setCharFormat(fmt);
+  cursor.insertText(text);
+
+  if(wasAtBottom)
+    scroll->setValue(scroll->maximum());
+}
+
 void LiveCapture::selfClose()
 {
   if(m_ContextMenu)
@@ -1440,6 +1499,22 @@ void LiveCapture::connectionThreadEntry()
     if(msg.type == TargetControlMessageType::RequestShow)
     {
       GUIInvoke::call(this, [this]() { m_Main->BringToFront(); });
+    }
+
+    // poll remote server for process output when connected remotely
+    if(m_IsRemote && (msg.type == TargetControlMessageType::Noop ||
+                      msg.type == TargetControlMessageType::CaptureProgress))
+    {
+      rdcarray<rdcpair<bool, rdcstr>> output;
+      if(m_Ctx.Replay().GetRemoteProcessOutput(output))
+      {
+        for(const auto &entry : output)
+        {
+          bool isStderr = entry.first;
+          QString text = QString::fromUtf8(entry.second.c_str(), entry.second.count());
+          GUIInvoke::call(this, [this, isStderr, text]() { appendProcessOutput(isStderr, text); });
+        }
+      }
     }
   }
 

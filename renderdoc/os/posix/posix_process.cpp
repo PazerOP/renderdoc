@@ -908,7 +908,7 @@ void ResetHookingEnvVars()
 rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
     const rdcstr &app, const rdcstr &workingDir, const rdcstr &cmdLine,
     const rdcarray<EnvironmentModification> &envList, const rdcstr &capturefile,
-    const CaptureOptions &opts, bool waitForExit)
+    const CaptureOptions &opts, bool waitForExit, ProcessIOHandles *ioHandles)
 {
   if(app.empty())
   {
@@ -980,7 +980,25 @@ rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
 
   RDCLOG("Running process %s for injection", app.c_str());
 
-  pid_t childPid = RunProcess(app, workingDir, cmdLine, envp, true);
+  int stdoutPipe[2] = {-1, -1}, stderrPipe[2] = {-1, -1};
+  if(ioHandles)
+  {
+    if(pipe(stdoutPipe) == -1)
+      RDCERR("Could not create stdout pipe");
+    if(pipe(stderrPipe) == -1)
+      RDCERR("Could not create stderr pipe");
+  }
+
+  pid_t childPid = RunProcess(app, workingDir, cmdLine, envp, true, ioHandles ? stdoutPipe : NULL,
+                              ioHandles ? stderrPipe : NULL);
+
+  if(ioHandles)
+  {
+    // store the read ends for the caller
+    ioHandles->stdoutRead = stdoutPipe[0];
+    ioHandles->stderrRead = stderrPipe[0];
+    // write ends are already closed by RunProcess in the parent
+  }
 
   int ret = 0;
 
@@ -1003,6 +1021,9 @@ rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
   RDResult result;
   if(ret == 0)
   {
+    if(ioHandles)
+      ioHandles->Close();
+
     SET_ERROR_RESULT(result, ResultCode::InjectionFailed,
                      "Couldn't connect to target program. Check that it didn't crash or exit "
                      "during early initialisation, e.g. due to an incorrectly configured working "

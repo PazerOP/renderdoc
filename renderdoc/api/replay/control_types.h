@@ -28,6 +28,54 @@
 #include <functional>
 #include "apidefs.h"
 #include "common_pipestate.h"
+
+#if !defined(SWIG)
+#ifdef _WIN32
+// forward declare so we can inline Close() without pulling in windows.h
+extern "C" __declspec(dllimport) int __stdcall CloseHandle(void *);
+#else
+#include <unistd.h>
+#endif
+namespace Process
+{
+struct ProcessIOHandles
+{
+#ifdef _WIN32
+  void *stdoutRead = NULL;
+  void *stderrRead = NULL;
+  inline void Close()
+  {
+    if(stdoutRead != NULL)
+    {
+      CloseHandle(stdoutRead);
+      stdoutRead = NULL;
+    }
+    if(stderrRead != NULL)
+    {
+      CloseHandle(stderrRead);
+      stderrRead = NULL;
+    }
+  }
+#else
+  int stdoutRead = -1;
+  int stderrRead = -1;
+  inline void Close()
+  {
+    if(stdoutRead >= 0)
+    {
+      close(stdoutRead);
+      stdoutRead = -1;
+    }
+    if(stderrRead >= 0)
+    {
+      close(stderrRead);
+      stderrRead = -1;
+    }
+  }
+#endif
+};
+}
+#endif
 #include "data_types.h"
 #include "rdcarray.h"
 #include "replay_enums.h"

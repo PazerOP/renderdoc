@@ -784,6 +784,7 @@
     <ClCompile Include="Widgets\Extended\RDTextEdit.cpp" />
     <ClCompile Include="Windows\MainWindow.cpp" />
     <ClCompile Include="Code\ReplayManager.cpp" />
+    <ClCompile Include="Code\ProcessIOReader.cpp" />
     <ClCompile Include="Windows\PipelineState\D3D11PipelineStateViewer.cpp" />
     <ClCompile Include="Windows\PipelineState\D3D12PipelineStateViewer.cpp" />
     <ClCompile Include="Windows\PipelineState\GLPipelineStateViewer.cpp" />
@@ -1035,6 +1036,7 @@
       <Message>MOC %(Filename).h</Message>
       <Outputs>$(IntDir)generated\moc_%(Filename).cpp</Outputs>
     </CustomBuild>
+    <ClInclude Include="Code\ProcessIOReader.h" />
     <ClInclude Include="Code\ReplayManager.h" />
     <ClInclude Include="Code\ScintillaSyntax.h" />
     <CustomBuild Include="Widgets\BufferFormatSpecifier.h">

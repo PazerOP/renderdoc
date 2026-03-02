@@ -730,9 +730,17 @@ void MainWindow::OnCaptureTrigger(const QString &exe, const QString &workingDir,
     ExecuteResult ret =
         m_Ctx.Replay().ExecuteAndInject(exe, workingDir, cmdLine, env, capturefile, opts);
 
-    GUIInvoke::call(this, [this, exe, ret, callback]() {
+    // Retrieve pipe handles for local launches (must be called on same thread as ExecuteAndInject)
+    Process::ProcessIOHandles *ioHandles = RENDERDOC_TakeLastIOHandles();
+
+    GUIInvoke::call(this, [this, exe, ret, ioHandles, callback]() {
       if(ret.result.code == ResultCode::JDWPFailure)
       {
+        if(ioHandles)
+        {
+          ioHandles->Close();
+          delete ioHandles;
+        }
         RDDialog::critical(
             this, tr("Error connecting to debugger"),
             tr("<html>Error launching %1 for capture.\n\n"
@@ -749,6 +757,11 @@ void MainWindow::OnCaptureTrigger(const QString &exe, const QString &workingDir,
 
       if(ret.result.code != ResultCode::Succeeded)
       {
+        if(ioHandles)
+        {
+          ioHandles->Close();
+          delete ioHandles;
+        }
         RDDialog::critical(
             this, tr("Error launching capture"),
             tr("Error launching %1 for capture.\n\n%2").arg(exe).arg(ret.result.Message()));
@@ -759,7 +772,7 @@ void MainWindow::OnCaptureTrigger(const QString &exe, const QString &workingDir,
           m_Ctx,
           m_Ctx.Replay().CurrentRemote().IsValid() ? m_Ctx.Replay().CurrentRemote().Hostname() : "",
           m_Ctx.Replay().CurrentRemote().IsValid() ? m_Ctx.Replay().CurrentRemote().Name() : "",
-          ret.ident, this, this);
+          ret.ident, this, this, ioHandles);
       ShowLiveCapture(live);
       callback(live);
     });
