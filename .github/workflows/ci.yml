@@ -399,7 +399,7 @@ jobs:
       with:
         name: Linux-${{ matrix.name }}
         path: |
-          build/bin/librenderdoc.so
+          build/lib/librenderdoc.so
           build/bin/renderdoccmd
           build/bin/qrenderdoc
         retention-days: 14
@@ -446,7 +446,7 @@ jobs:
       with:
         name: Android
         path: |
-          build-android-arm32/bin/librenderdoc.so
+          build-android-arm32/lib/librenderdoc.so
           build-android-arm32/bin/renderdoccmd
         retention-days: 14
   macOS:
@@ -511,7 +511,7 @@ jobs:
       with:
         name: Mac-${{ matrix.name }}
         path: |
-          build/bin/librenderdoc.dylib
+          build/lib/librenderdoc.dylib
           build/bin/renderdoccmd
           build/bin/qrenderdoc.app
         retention-days: 14
