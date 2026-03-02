@@ -5,6 +5,7 @@ on:
     branches:
       - v1.x
       - ci-test
+      - claude/trigger-ci-linux-build-vjTdJ
   pull_request:
     branches:
       - v1.x
