@@ -348,6 +348,8 @@ static void ActiveRemoteClientThread(ClientThread *threadData,
       return;
 
     thread = Threading::CreateThread([&processIOLock, &processIOBuffer, fd, handle, isStderr]() {
+      (void)fd;
+      (void)handle;
       char buf[4096];
       for(;;)
       {
