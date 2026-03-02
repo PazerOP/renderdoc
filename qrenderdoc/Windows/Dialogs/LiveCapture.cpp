@@ -1272,6 +1272,12 @@ void LiveCapture::connectionClosed()
 
 void LiveCapture::appendProcessOutput(bool isStderr, const QString &text)
 {
+  // Tee process output to qrenderdoc's own stdout/stderr so it's visible in the terminal
+  QByteArray utf8 = text.toUtf8();
+  FILE *dest = isStderr ? stderr : stdout;
+  fwrite(utf8.constData(), 1, utf8.size(), dest);
+  fflush(dest);
+
   QTextEdit *output = ui->processOutput;
   QScrollBar *scroll = output->verticalScrollBar();
   bool wasAtBottom = scroll->value() >= scroll->maximum() - 4;
