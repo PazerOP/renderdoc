@@ -1170,8 +1170,7 @@ rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
 
   HANDLE hStdoutRd = NULL, hStderrRd = NULL;
   PROCESS_INFORMATION pi = RunProcess(app, workingDir, cmdLine, env, false,
-                                      ioHandles ? &hStdoutRd : NULL,
-                                      ioHandles ? &hStderrRd : NULL);
+                                      ioHandles ? &hStdoutRd : NULL, ioHandles ? &hStderrRd : NULL);
 
   if(ioHandles)
   {
