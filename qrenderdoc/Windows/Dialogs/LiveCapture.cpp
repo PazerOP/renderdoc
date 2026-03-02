@@ -32,10 +32,10 @@
 #include <QProcess>
 #include <QScrollBar>
 #include <QStyledItemDelegate>
-#include "Code/ReplayManager.h"
 #include <QToolBar>
 #include <QToolButton>
 #include "Code/QRDUtils.h"
+#include "Code/ReplayManager.h"
 #include "Code/Resources.h"
 #include "Code/qprocessinfo.h"
 #include "Widgets/Extended/RDLabel.h"
@@ -100,9 +100,8 @@ LiveCapture::LiveCapture(ICaptureContext &ctx, const QString &hostname, const QS
   if(ioHandles && !m_IsRemote)
   {
     m_IOReader = new ProcessIOReader(ioHandles, this);
-    m_IOReader->start([this](bool isStderr, const QString &text) {
-      appendProcessOutput(isStderr, text);
-    });
+    m_IOReader->start(
+        [this](bool isStderr, const QString &text) { appendProcessOutput(isStderr, text); });
   }
   else
   {

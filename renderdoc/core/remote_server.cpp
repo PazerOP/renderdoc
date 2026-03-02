@@ -1160,7 +1160,7 @@ void RenderDoc::BecomeRemoteServer(const rdcstr &listenhost, uint16_t port,
   if(sock == NULL)
     return;
 
-  rdcarray<rdcpair<uint32_t, uint32_t> > listenRanges;
+  rdcarray<rdcpair<uint32_t, uint32_t>> listenRanges;
   bool allowExecution = true;
 
   FILE *f = FileIO::fopen(FileIO::GetAppFolderFilename("remoteserver.conf"), FileIO::ReadText);

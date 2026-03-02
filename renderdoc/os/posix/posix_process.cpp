@@ -1003,8 +1003,8 @@ rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
       RDCERR("Could not create stderr pipe");
   }
 
-  pid_t childPid = RunProcess(app, workingDir, cmdLine, envp, true,
-                              ioHandles ? stdoutPipe : NULL, ioHandles ? stderrPipe : NULL);
+  pid_t childPid = RunProcess(app, workingDir, cmdLine, envp, true, ioHandles ? stdoutPipe : NULL,
+                              ioHandles ? stderrPipe : NULL);
 
   if(ioHandles)
   {
