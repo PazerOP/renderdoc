@@ -1692,6 +1692,10 @@ comes in, we remove any other requests in the queue before it that have the same
 )");
   virtual void BlockInvoke(InvokeCallback method) = 0;
 
+#if !defined(SWIG)
+  virtual bool GetRemoteProcessOutput(rdcarray<rdcpair<bool, rdcstr>> &output) = 0;
+#endif
+
 protected:
   IReplayManager() = default;
   ~IReplayManager() = default;

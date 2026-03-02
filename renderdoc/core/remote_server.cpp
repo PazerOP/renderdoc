@@ -25,6 +25,9 @@
 
 #include "remote_server.h"
 #include <utility>
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
 #include "android/android.h"
 #include "api/replay/renderdoc_replay.h"
 #include "api/replay/version.h"

@@ -1567,12 +1567,6 @@ went wrong.
 :type: int
 )");
   uint32_t ident;
-
-#if !defined(SWIG)
-  // internal use only - pipe handles for reading the launched process's stdout/stderr.
-  // not exposed to scripting interfaces.
-  Process::ProcessIOHandles *ioHandles = NULL;
-#endif
 };
 
 DECLARE_REFLECTION_STRUCT(ExecuteResult);

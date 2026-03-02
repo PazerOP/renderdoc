@@ -2112,6 +2112,13 @@ RENDERDOC_ExecuteAndInject(const rdcstr &app, const rdcstr &workingDir, const rd
                            const rdcarray<EnvironmentModification> &env, const rdcstr &capturefile,
                            const CaptureOptions &opts, bool waitForExit);
 
+#if !defined(SWIG)
+// After calling RENDERDOC_ExecuteAndInject, call this to retrieve the pipe handles for reading the
+// launched process's stdout/stderr. Returns NULL if no handles are available. The caller takes
+// ownership of the returned pointer and must delete it when done.
+RENDERDOC_API Process::ProcessIOHandles *RENDERDOC_CC RENDERDOC_TakeLastIOHandles();
+#endif
+
 DOCUMENT(R"(Where supported by operating system and permissions, inject into a running process.
 
 :param int pid: The Process ID (PID) to inject into.

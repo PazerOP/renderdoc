@@ -363,11 +363,17 @@ extern "C" RENDERDOC_API void RENDERDOC_CC RENDERDOC_UnregisterMemoryRegion(void
   RenderDoc::Inst().UnregisterMemoryRegion(base);
 }
 
+static Process::ProcessIOHandles *s_lastIOHandles = NULL;
+
 extern "C" RENDERDOC_API ExecuteResult RENDERDOC_CC
 RENDERDOC_ExecuteAndInject(const rdcstr &app, const rdcstr &workingDir, const rdcstr &cmdLine,
                            const rdcarray<EnvironmentModification> &env, const rdcstr &capturefile,
                            const CaptureOptions &opts, bool waitForExit)
 {
+  // Clean up any previously unclaimed handles
+  delete s_lastIOHandles;
+  s_lastIOHandles = NULL;
+
   Process::ProcessIOHandles *ioHandles = new Process::ProcessIOHandles();
 
   rdcpair<RDResult, uint32_t> status = Process::LaunchAndInjectIntoProcess(
@@ -379,14 +385,20 @@ RENDERDOC_ExecuteAndInject(const rdcstr &app, const rdcstr &workingDir, const rd
 
   if(status.first.code == ResultCode::Succeeded)
   {
-    ret.ioHandles = ioHandles;
+    s_lastIOHandles = ioHandles;
   }
   else
   {
     delete ioHandles;
-    ret.ioHandles = NULL;
   }
 
+  return ret;
+}
+
+RENDERDOC_API Process::ProcessIOHandles *RENDERDOC_CC RENDERDOC_TakeLastIOHandles()
+{
+  Process::ProcessIOHandles *ret = s_lastIOHandles;
+  s_lastIOHandles = NULL;
   return ret;
 }
 
