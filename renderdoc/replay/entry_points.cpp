@@ -395,7 +395,7 @@ RENDERDOC_ExecuteAndInject(const rdcstr &app, const rdcstr &workingDir, const rd
   return ret;
 }
 
-RENDERDOC_API Process::ProcessIOHandles *RENDERDOC_CC RENDERDOC_TakeLastIOHandles()
+extern "C" RENDERDOC_API Process::ProcessIOHandles *RENDERDOC_CC RENDERDOC_TakeLastIOHandles()
 {
   Process::ProcessIOHandles *ret = s_lastIOHandles;
   s_lastIOHandles = NULL;

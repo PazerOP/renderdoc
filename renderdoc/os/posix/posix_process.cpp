@@ -905,20 +905,6 @@ void ResetHookingEnvVars()
   direct_setenv("RENDERDOC_ORIGPRELOAD", "", true);
 }
 
-void Process::ProcessIOHandles::Close()
-{
-  if(stdoutRead >= 0)
-  {
-    close(stdoutRead);
-    stdoutRead = -1;
-  }
-  if(stderrRead >= 0)
-  {
-    close(stderrRead);
-    stderrRead = -1;
-  }
-}
-
 rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
     const rdcstr &app, const rdcstr &workingDir, const rdcstr &cmdLine,
     const rdcarray<EnvironmentModification> &envList, const rdcstr &capturefile,

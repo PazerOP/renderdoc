@@ -1126,20 +1126,6 @@ uint32_t Process::LaunchScript(const rdcstr &script, const rdcstr &workingDir,
   return LaunchProcess("cmd.exe", workingDir, args, internal, result);
 }
 
-void Process::ProcessIOHandles::Close()
-{
-  if(stdoutRead != NULL)
-  {
-    CloseHandle((HANDLE)stdoutRead);
-    stdoutRead = NULL;
-  }
-  if(stderrRead != NULL)
-  {
-    CloseHandle((HANDLE)stderrRead);
-    stderrRead = NULL;
-  }
-}
-
 rdcpair<RDResult, uint32_t> Process::LaunchAndInjectIntoProcess(
     const rdcstr &app, const rdcstr &workingDir, const rdcstr &cmdLine,
     const rdcarray<EnvironmentModification> &env, const rdcstr &capturefile,
