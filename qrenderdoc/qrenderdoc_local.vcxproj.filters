@@ -600,6 +600,9 @@
     <ClCompile Include="Code\ReplayManager.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="Code\ProcessIOReader.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="$(IntDir)generated\moc_PythonShell.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
@@ -1087,6 +1090,9 @@
     </ClInclude>
     <ClInclude Include="Code\Interface\QRDInterface.h">
       <Filter>Code\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ProcessIOReader.h">
+      <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="Code\ReplayManager.h">
       <Filter>Code</Filter>

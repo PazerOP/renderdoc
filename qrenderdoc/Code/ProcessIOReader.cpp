@@ -25,7 +25,7 @@
 #include "ProcessIOReader.h"
 #include <QPointer>
 #include "Code/QRDUtils.h"
-#include "os/os_specific.h"
+#include "control_types.h"
 
 #if defined(Q_OS_WIN32)
 #include <windows.h>

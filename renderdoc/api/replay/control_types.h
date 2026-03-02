@@ -32,7 +32,17 @@
 #if !defined(SWIG)
 namespace Process
 {
-struct ProcessIOHandles;
+struct ProcessIOHandles
+{
+#ifdef _WIN32
+  void *stdoutRead = NULL;
+  void *stderrRead = NULL;
+#else
+  int stdoutRead = -1;
+  int stderrRead = -1;
+#endif
+  void Close();
+};
 }
 #endif
 #include "data_types.h"

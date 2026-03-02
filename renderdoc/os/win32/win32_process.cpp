@@ -29,6 +29,7 @@
 #include <Psapi.h>
 #include <tchar.h>
 #include <tlhelp32.h>
+#include "api/replay/control_types.h"
 #include "common/formatting.h"
 #include "core/core.h"
 #include "os/os_specific.h"

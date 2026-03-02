@@ -38,8 +38,6 @@ class LambdaThread;
 // and invokes a callback on the GUI thread when data arrives.
 class ProcessIOReader : public QObject
 {
-  Q_OBJECT
-
 public:
   typedef std::function<void(bool isStderr, const QString &text)> OutputCallback;
 
